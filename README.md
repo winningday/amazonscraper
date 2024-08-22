@@ -21,10 +21,10 @@ The scraper uses **Selenium** for interacting with Amazon’s dynamic content, *
 
 ## Features
 - Automatic retries for failed URLs.
-- Captures detailed product information, including Goodreads data.
+- Captures detailed product information, including potential Goodreads data if user logs in.
 - Supports headless Chrome mode for running without displaying the browser.
 - Dynamic CSV generation: each product is written to the CSV file as soon as it’s scraped.
-- Automatic login via cookies, with manual login fallback.
+- Automatic login via cookies, with manual login fallback set by default. With cmd-line option to over-ride login
 - Error handling with logging for failed URLs, including retry attempts.
 
 ## Requirements
