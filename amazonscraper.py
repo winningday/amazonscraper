@@ -219,10 +219,12 @@ def scrape_amazon(driver, csv_file):
         print(f"Scraping Amazon: {amazon_url}")
         try:
             product_data = scrape_amazon_product(driver, amazon_url)
-            pd.DataFrame([product_data]).to_csv(csv_output, mode='a', header=False, index=False)  # Append each result to CSV
+            if is_valid_product_data(product_data):
+                pd.DataFrame([product_data]).to_csv(csv_output, mode='a', header=False, index=False)  # Append each result to CSV
+            else:
+                print(f"Invalid data scraped for {amazon_url}")
+                failed_urls.append(amazon_url)
         except Exception as e:
-            page_source = driver.page_source
-            print(f"Page source during error: {page_source[:1000]}")  # Print the first 1000 characters of the page source
             print(f"Error scraping {amazon_url}: {e}")  # Corrected message       
             failed_urls.append(amazon_url)  # Log failed URL
 
@@ -230,7 +232,13 @@ def scrape_amazon(driver, csv_file):
     if failed_urls:
         print(f"Retrying {len(failed_urls)} failed URLs...")
         retry_failed_urls(driver, failed_urls, csv_output)
-    
+
+def is_valid_product_data(product_data):
+    # Check if most of the important fields are not "#ERROR"
+    important_fields = ['Title', 'Author', 'Format', 'ASIN', 'Amazon Rating']
+    valid_fields = sum(1 for field in important_fields if product_data[field] != "#ERROR")
+    return valid_fields >= 3  # Consider valid if at least 3 important fields are scraped
+
 # Retry function for failed URLs
 def retry_failed_urls(driver, failed_urls, csv_output, max_retries=3):
     retry_failures = []
@@ -240,9 +248,12 @@ def retry_failed_urls(driver, failed_urls, csv_output, max_retries=3):
             print(f"Retrying {url}, attempt {attempt + 1}")
             try:
                 product_data = scrape_amazon_product(driver, url)
-                pd.DataFrame([product_data]).to_csv(csv_output, mode='a', header=False, index=False)  # Append retried result
-                success = True
-                break
+                if is_valid_product_data(product_data):
+                    pd.DataFrame([product_data]).to_csv(csv_output, mode='a', header=False, index=False) # Append retried result
+                    success = True
+                    break
+                else:
+                    print(f"Invalid data scraped for {url} on retry attempt {attempt + 1}")
             except Exception as e:
                 print(f"Retry {attempt + 1} failed for {url}: {e}")
         if not success:
