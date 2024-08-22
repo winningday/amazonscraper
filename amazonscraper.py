@@ -40,6 +40,7 @@ import numpy as np
 from urllib.parse import urlparse
 import random
 import os
+import argparse
 
 # Utility functions for cookies
 def save_cookies(driver, cookies_file):
@@ -256,6 +257,11 @@ def main():
     # Start timer
     start_time = time.time()
 
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Amazon Scraper with optional Amazon login for Goodreads data.")
+    parser.add_argument('--no-login', action='store_true', help="Skip login to Amazon (Goodreads data will not be scraped)")
+    args = parser.parse_args()
+
     # Setup Chrome options for Selenium
     chrome_options = Options()
     ua = UserAgent()
@@ -263,30 +269,34 @@ def main():
 
     webdriver_path = './chromedriver-mac-arm64/chromedriver'
     service = Service(webdriver_path)
-    driver = webdriver.Chrome(service=service, options=chrome_options)
 
-    # Load amazon and cookies
-    driver.get('https://www.amazon.com/')
-    try:
-        load_cookies(driver, 'amazon_cookies.pkl')
-        # print("Cookies loaded successfully.")
-    except FileNotFoundError:
-        print("Cookies not found, logging in manually...")
-        login_and_save_cookies(driver)
+    # Perform login by default unless --no-login flag is passed
+    if not args.no_login:
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        # Load amazon and cookies
+        driver.get('https://www.amazon.com/')
+        try:
+            load_cookies(driver, 'amazon_cookies.pkl')
+            # print("Cookies loaded successfully.")
+        except FileNotFoundError:
+            print("Cookies not found, logging in manually...")
+            login_and_save_cookies(driver)
 
-    # Check if logged in
-    driver.get('https://www.amazon.com/gp/css/homepage.html')  # Navigate to an account page that requires login
-    if "Sign In" in driver.page_source or "Sign-In" in driver.title:
-        print("Not logged in, prompting for manual login...")
-        login_and_save_cookies(driver)  # Trigger manual login and save cookies
+        # Check if logged in
+        driver.get('https://www.amazon.com/gp/css/homepage.html')  # Navigate to an account page that requires login
+        if "Sign In" in driver.page_source or "Sign-In" in driver.title:
+            print("Not logged in, prompting for manual login...")
+            login_and_save_cookies(driver)  # Trigger manual login and save cookies
 
-    # Close the UI driver after login
-    driver.quit()
+        # Close the UI driver after login
+        driver.quit()
+ 
+    else:
+        print("Skipping login, Goodreads data will not be scraped.")
+        # Reinitialize driver for headless scraping
 
-    # Reinitialize driver for headless scraping
     chrome_options.add_argument("--headless")  # Run in headless mode (no UI)
     driver = webdriver.Chrome(service=service, options=chrome_options)
-
     # Provide CSV file containing URLs
     csv_file = 'kindle_books.csv'
 
