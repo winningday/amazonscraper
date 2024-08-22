@@ -5,3 +5,10 @@ kindle_books 2.csv
 scraped_amazon_data.xlsx
 scraped_amazon_data.csv
 *.xlsx
+/kindle_books 2.csv
+/failed_urls.csv
+/chromedriver-mac-arm64.zip
+/amazonscraperOLD.py
+/scraped_amazon_data.xlsx
+/.DS_Store
+/amazon_cookies.pkl
