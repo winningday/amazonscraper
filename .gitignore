@@ -4,3 +4,4 @@ chromedriver-mac-arm64.zip
 kindle_books 2.csv
 scraped_amazon_data.xlsx
 scraped_amazon_data.csv
+*.xlsx
