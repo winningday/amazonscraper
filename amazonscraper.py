@@ -76,10 +76,15 @@ def clean_url(url):
 def scrape_amazon_product(driver, url):
     driver.get(url)
 
-    # Wait for the page to load
-    WebDriverWait(driver, 30).until(
-        EC.presence_of_element_located((By.ID, "reviewFeatureGroup"))
-    )
+    # Trying to fix sometimes page not loading and no data scraped
+    try:
+        # Wait for the page to load, but continue if the element is not found
+        WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.ID, "reviewFeatureGroup"))
+        )
+    except Exception as e:
+        print(f"Warning: Timeout or element not found on {url}, proceeding with scraping available data.")
+
     
     # Scroll to simulate human behavior
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
