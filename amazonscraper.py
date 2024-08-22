@@ -69,6 +69,7 @@ def login_and_save_cookies(driver):
 # Clean URL function
 def clean_url(url):
     parsed_url = urlparse(url)
+    # Doc: https://docs.python.org/3/library/urllib.parse.html
     clean_path = parsed_url.path.split('/ref')[0]  # Remove anything after /ref
     clean_url = f"{parsed_url.scheme}://{parsed_url.netloc}{clean_path}/"
     return clean_url
