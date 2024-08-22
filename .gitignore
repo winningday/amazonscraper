@@ -1,14 +1,22 @@
+# Ignore CSV files related to Kindle books and Amazon scraping
 kindle_books.csv
-amazon_cookies.pkl
-chromedriver-mac-arm64.zip
-kindle_books 2.csv
-scraped_amazon_data.xlsx
+kindle_books\ 2.csv
 scraped_amazon_data.csv
+
+# Ignore Amazon cookies file
+amazon_cookies.pkl
+
+# Ignore chromedriver ZIP file
+chromedriver-mac-arm64.zip
+
+# Ignore old scraper script
+amazonscraperOLD.py
+
+# Ignore Excel files
 *.xlsx
-/kindle_books 2.csv
-/failed_urls.csv
-/chromedriver-mac-arm64.zip
-/amazonscraperOLD.py
-/scraped_amazon_data.xlsx
-/.DS_Store
-/amazon_cookies.pkl
+
+# Ignore macOS specific system files
+.DS_Store
+
+# Ignore failed URLs CSV
+failed_urls.csv
