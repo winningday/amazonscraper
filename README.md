@@ -39,6 +39,18 @@ Other dependencies:
 - **Chrome**: The scraper requires a working version of Chrome to run.
 - **Chromedriver**: ChromeDriver must be installed and set with correct permissions for your OS (especially on macOS). More info can be found at https://developer.chrome.com/docs/chromedriver/downloads
 - **Fake User Agent**: This library randomizes the user agent to simulate different browsing environments.
+- Also, make sure to create a csv file in the same directory named `kindle_books.csv` with the following<br>
+    Amazon_URL<br>
+    https://www.amazon.com/product/url/<br>
+    ie:
+    ```bash
+    Amazon_URL
+    https://www.amazon.com/America-Against-Wang-Huning/dp/B09RM4PW9L/ref=tmm_pap_swatch_0?_encoding=UTF8&qid=&sr=
+    https://www.amazon.com/gp/product/B00LZYHSFA/ref=ppx_yo_dt_b_d_asin_title_351_o00?ie=UTF8&psc=1
+    https://www.amazon.com/gp/product/B00PI184XG/ref=ppx_yo_dt_b_d_asin_title_351_o01?ie=UTF8&psc=1
+    https://www.amazon.com/gp/product/B0045Y1NL2/ref=ppx_yo_dt_b_d_asin_title_351_o02?ie=UTF8&psc=1
+    https://www.amazon.com/your-orders/pop/ref=ppx_yo_dt_b_d_pop?_encoding=UTF8&gen=canonical&lineItemId=3594553061360&orderId=D01-7965018-7443430
+    ```
 
 ## Installation
 
