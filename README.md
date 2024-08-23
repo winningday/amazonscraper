@@ -129,6 +129,13 @@ You can install them using:
 ```bash
 pip install -r requirements.txt
 ```
+
+## Testing
+Setup a test_amazonscraper.py, to run it:
+```bash
+pytest test_amazonscraper.py
+```
+
 ## License
 This project is licensed under the MIT License - see the [LICENSE](https://github.com/winningday/amazonscraper/blob/main/LICENSE) file for details.
 

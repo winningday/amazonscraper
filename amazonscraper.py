@@ -21,8 +21,6 @@ for parsing and requests for making HTTP requests. However, since Amazon
 often obfuscates its HTML structure or employs dynamic loading for 
 certain elements (like reviews and ratings), we may also need to work 
 with tools like Selenium if necessary.
-
-
 '''
 
 import time
@@ -70,13 +68,19 @@ def login_and_save_cookies(driver):
 def clean_url(url):
     parsed_url = urlparse(url)
     # Doc: https://docs.python.org/3/library/urllib.parse.html
-    clean_path = parsed_url.path.split('/ref')[0]  # Remove anything after /ref
-    clean_url = f"{parsed_url.scheme}://{parsed_url.netloc}{clean_path}/"
+    clean_path = parsed_url.path.split('/ref')[0].rstrip('/')   # Remove anything after /ref and trailing slash if it exists
+    clean_url = f"{parsed_url.scheme}://{parsed_url.netloc}{clean_path}"
+    if not clean_path.endswith('/'):
+        clean_url += '/'
     return clean_url
 
 # Function to scrape the Amazon product
 def scrape_amazon_product(driver, url):
     driver.get(url)
+
+    # Check for CAPTCHA
+    if check_for_captcha(driver):
+        return "CAPTCHA"
 
     # Trying to fix sometimes page not loading and no data scraped
     try:
@@ -86,7 +90,6 @@ def scrape_amazon_product(driver, url):
         )
     except Exception as e:
         print(f"Warning: Timeout or element not found on {url}, proceeding with scraping available data.")
-
     
     # Scroll to simulate human behavior
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
@@ -200,7 +203,7 @@ def scrape_amazon_product(driver, url):
     return result
 
 # Function to scrape Amazon with retries and dynamic CSV writing
-def scrape_amazon(driver, csv_file):
+def scrape_amazon(driver, csv_file, service, ua=None):
     df = pd.read_csv(csv_file)
     failed_urls = []
     csv_output = 'scraped_amazon_data.csv'
@@ -217,15 +220,50 @@ def scrape_amazon(driver, csv_file):
     for index, row in df.iterrows():
         amazon_url = row['Amazon_URL']
         print(f"Scraping Amazon: {amazon_url}")
+        
         try:
+            # Check for CAPTCHA before scraping
+            if check_for_captcha(driver):
+                print("CAPTCHA detected. Switching to visible mode for manual solving.")
+                # Switch to visible mode for CAPTCHA solving
+                driver.quit()
+                driver = switch_browser_mode(service, headless=False, ua=ua)
+                driver.get(amazon_url)
+                input("Please solve the CAPTCHA and press Enter when done...")
+                driver.quit()
+                # Switch back to headless mode after CAPTCHA is solved
+                driver = switch_browser_mode(service, headless=True, ua=ua)
+
+                # ** Add second CAPTCHA check here ** after switching back to headless
+                if check_for_captcha(driver):
+                    print("CAPTCHA detected again after switching back to headless mode.")
+                    # Handle additional CAPTCHA logic if needed
+                    return "CAPTCHA"
+
+            # Attempt scraping after CAPTCHA check
             product_data = scrape_amazon_product(driver, amazon_url)
+            # If CAPTCHA detected during scraping
+            if product_data == "CAPTCHA":
+                print("CAPTCHA encountered again, switching modes to handle it.")
+                # Switch to visible mode
+                driver.quit()
+                driver = switch_browser_mode(service, headless=False, ua=ua)
+                driver.get(amazon_url)
+                input("Please solve the CAPTCHA and press Enter when done...")
+                driver.quit()
+                # Switch back to headless mode                
+                driver = switch_browser_mode(service, headless=True, ua=ua)
+                # Retry scraping
+                product_data = scrape_amazon_product(driver, amazon_url)
+            
+            # Validate and save scraped product data
             if is_valid_product_data(product_data):
                 pd.DataFrame([product_data]).to_csv(csv_output, mode='a', header=False, index=False)  # Append each result to CSV
             else:
                 print(f"Invalid data scraped for {amazon_url}")
                 failed_urls.append(amazon_url)
         except Exception as e:
-            print(f"Error scraping {amazon_url}: {e}")  # Corrected message       
+            print(f"Error scraping {amazon_url}: {e}")   
             failed_urls.append(amazon_url)  # Log failed URL
 
     # Retry failed URLs if any
@@ -264,6 +302,24 @@ def retry_failed_urls(driver, failed_urls, csv_output, max_retries=3):
         pd.DataFrame(retry_failures, columns=["Failed URLs"]).to_csv("failed_urls.csv", index=False)
         print(f"Failed URLs after retries saved to 'failed_urls.csv'.")
 
+def check_for_captcha(driver):
+    # Function to check whenever a CAPTCHA might appear in a page
+    if "captcha" in driver.page_source.lower():
+        print("CAPTCHA detected. Please solve it manually.")
+        input("Please solve the CAPTCHA and press Enter when done...")
+        return True
+    return False
+
+def switch_browser_mode(service, headless=True, ua=None):
+    # Function to switch to headless and back and forth, useful if a CAPTCHA found
+    chrome_options = Options()
+    if ua is None:
+        ua = UserAgent() # Generate a new user agent if not passed
+    chrome_options.add_argument(f"user-agent={ua.random}")
+    if headless:
+        chrome_options.add_argument("--headless")
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    return driver
 
 def main():
     # Start timer
@@ -275,8 +331,8 @@ def main():
     args = parser.parse_args()
 
     # Setup Chrome options for Selenium
-    chrome_options = Options()
     ua = UserAgent()
+    chrome_options = Options()
     chrome_options.add_argument(f"user-agent={ua.random}")
 
     webdriver_path = './chromedriver-mac-arm64/chromedriver'
@@ -284,9 +340,14 @@ def main():
 
     # Perform login by default unless --no-login flag is passed
     if not args.no_login:
-        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver = switch_browser_mode(service, headless=False, ua=ua)  # Start in non-headless mode for login
         # Load amazon and cookies
         driver.get('https://www.amazon.com/')
+
+        # Check for CAPTCHA
+        if check_for_captcha(driver):
+            input("Please solve the CAPTCHA and press Enter when done...")
+
         try:
             load_cookies(driver, 'amazon_cookies.pkl')
             # print("Cookies loaded successfully.")
@@ -305,15 +366,27 @@ def main():
  
     else:
         print("Skipping login, Goodreads data will not be scraped.")
-        # Reinitialize driver for headless scraping
 
-    chrome_options.add_argument("--headless")  # Run in headless mode (no UI)
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    # Reinitialize driver for scraping
+    driver = switch_browser_mode(service, headless=True, ua=ua)  # Switch to headless for scraping
+
+    # Check for CAPTCHA before starting scraping
+    driver.get('https://www.amazon.com/')
+    if check_for_captcha(driver):
+        # Switch to visible mode for CAPTCHA
+        driver.quit()
+        driver = switch_browser_mode(service, headless=False, ua=ua)
+        driver.get('https://www.amazon.com/')
+        input("Please solve the CAPTCHA and press Enter when done...")
+
+        driver.quit()
+        driver = switch_browser_mode(service, headless=True, ua=ua)
+
     # Provide CSV file containing URLs
     csv_file = 'kindle_books.csv'
 
     # Run the scraping process
-    scrape_amazon(driver, csv_file)
+    scrape_amazon(driver, csv_file, service, ua)
 
     driver.quit()
 
