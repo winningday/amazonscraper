@@ -74,9 +74,8 @@ def login_and_save_cookies(driver):
 def clean_url(url):
     parsed_url = urlparse(url)
     # Doc: https://docs.python.org/3/library/urllib.parse.html
-    clean_path = parsed_url.path.split("/ref")[0].rstrip(
-        "/"
-    )  # Remove anything after /ref and trailing slash if it exists
+    clean_path = parsed_url.path.split("/ref")[0].rstrip("/")  
+    # Remove anything after /ref and trailing slash if it exists
     clean_url = f"{parsed_url.scheme}://{parsed_url.netloc}{clean_path}"
     if not clean_path.endswith("/"):
         clean_url += "/"
